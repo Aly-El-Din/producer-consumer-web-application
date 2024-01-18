@@ -1,34 +1,44 @@
 package com.producerconsumer.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class Queue {
-
+public class Queue implements Runnable {
     private List<Product> products;
-    private List<Machine> previousMachines;
     private List<Machine> freeMachines;
+    private String id;
+
+    public Queue(String id) {
+        this.id = id;
+        this.freeMachines = new ArrayList<>();
+        this.products = new ArrayList<>();
+    }
+
+    public void setProducts(List<Product> products) {
+        this.products = products;
+    }
+
+    public List<Product> getProducts() {
+        return products;
+    }
 
     public Product getProduct() {
-        while(products.isEmpty()){
-            try {
-                wait();
-            }catch (Exception e){
-                e.printStackTrace();
-            }
-        }
         return products.remove(0);
     }
 
     public synchronized void addProduct(Product product) {
         products.add(product);
-        notify();
+    }
+
+    public String getId() {
+        return id;
     }
 
     public void addMachine(Machine machine) {
         freeMachines.add(machine);
     }
 
-    public void removeMachine(Machine machine) {
+    public synchronized void removeMachine(Machine machine) {
         freeMachines.remove(machine);
     }
 
@@ -38,4 +48,23 @@ public class Queue {
         }
         return null;
     }
+    @Override
+    public void run() {
+        while (true) {
+            try {
+                //wait for 1 second before checking for free machines (input rate)
+                Thread.sleep(1000L);
+                Machine freeMachine = getFreeMachine();
+                if(freeMachine != null && !products.isEmpty()){
+                    Product product = getProduct();
+                    freeMachine.addProduct(product);
+                    System.out.println("Queue " + id + " sent product " + product.getColor() + " to machine " + freeMachine.getId());
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
 }

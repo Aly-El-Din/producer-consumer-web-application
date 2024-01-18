@@ -8,7 +8,6 @@ public class Product {
         String[] colors = {"red","blue","orange","purple","black","pink"};
         this.color = colors[(int)(Math.random()*colors.length)];
     }
-
     public String getColor() {
         return color;
     }

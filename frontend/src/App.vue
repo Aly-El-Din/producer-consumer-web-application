@@ -36,13 +36,16 @@ export default {
   },
   created() {
     const socket = new SockJS('http://localhost:8080/websocket-endpoint');
-    console.log("esmial: socked added")
     this.stompClient = Stomp.over(socket);
     this.stompClient.connect({}, () => {
       this.stompClient.subscribe('/topic/updates', (update) => {
         console.log("here in update ")
-        console.log(JSON.parse(update.body))
-        
+        console.log(update)
+        console.log(update.body)
+        if(update.body.split(',')[0][0] === 'Q')
+          this.queues[parseInt(update.body.split(',')[0][1])].children[2].text(update.body.split(',')[1]);
+        else
+          this.machines[parseInt(update.body.split(',')[0][1]) - 1].children[0].fill(update.body.split(',')[1]);
       });
     });
   },
@@ -62,6 +65,8 @@ export default {
         y: yc,
         text: textString,
         fontSize: 20,
+        fontFamily: 'serif',
+        fontweight: 'bold',
         fill: 'black',
       });
 
@@ -72,6 +77,18 @@ export default {
       group.add(shape);
       group.add(text);
 
+      if (textString[0] === 'Q') {
+        const text2 = new Konva.Text({
+          x: xc + 9,
+          y: yc + 24,
+          text: '0',
+          fontSize: 15,
+          fill: 'black',
+          fontFamily: 'serif',
+        });
+        group.add(text2);
+      }
+
       return group;
     },
     addMachine() {
@@ -79,7 +96,7 @@ export default {
         x: 42,
         y: 42,
         radius: 40,
-        fill: 'grey',
+        fill: '#22d431',
         stroke: 'black',
       });
 
@@ -107,7 +124,7 @@ export default {
         y: 5,
         width: 100,
         height: 50,
-        fill: 'grey',
+        fill: 'yellow',
         stroke: 'black',
         type: 'queue'
       });
@@ -207,12 +224,12 @@ export default {
         }
       }
       for (let arrow of this.arrows) {
-        let tmp=arrow[0] + '>' + arrow[1];
+        let tmp = arrow[0] + '>' + arrow[1];
         this.arrowsGroup.push(tmp);
 
       }
       console.log("arrows group")
-       console.log(this.arrowsGroup)
+      console.log(this.arrowsGroup)
       fetch(`http://localhost:8080/start?machines=${this.machines.length}&queues=${this.queues.length}
              &arrows=${this.arrowsGroup}&numberofProducts=${this.NumberofProducts}`, {
         method: 'POST',
@@ -225,7 +242,6 @@ export default {
         .catch(error => {
           console.error('Error:', error)
         });
-      alert("Playing...");
     },
     replay() {
       alert("Replaying...");

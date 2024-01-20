@@ -3,6 +3,7 @@ package com.producerconsumer.service;
 import com.producerconsumer.model.Machine;
 import com.producerconsumer.model.Product;
 import com.producerconsumer.model.Queue;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -16,20 +17,29 @@ public class SimulationService {
     private static List<Queue> queues;
     private static SimpMessagingTemplate template;
 
+    @Autowired
     public SimulationService(SimpMessagingTemplate template) {
         SimulationService.template = template;
+        machines = new ArrayList<>();
+        queues = new ArrayList<>();
     }
 
-    public void addMachines(int machines) {
-        for (int i = 0; i < machines; i++) {
+    public SimulationService() {
+        machines = new ArrayList<>();
+        queues = new ArrayList<>();
+    }
+    public void addMachines(int machinesCount) {
+        machines.clear();
+        for (int i = 1; i <= machinesCount; i++) {
             Machine machine = new Machine("M" + i);
-            this.machines.add(machine);
+            machines.add(machine);
         }
     }
-    public void addQueues(int queues) {
-        for (int i = 0; i < queues; i++) {
+    public void addQueues(int queuesCount) {
+        queues.clear();
+        for (int i = 0; i < queuesCount; i++) {
             Queue queue = new Queue("Q" + i);
-            this.queues.add(queue);
+            queues.add(queue);
         }
     }
     //params: [ "Q0,M1" , "M2,Q4" ]
@@ -67,19 +77,18 @@ public class SimulationService {
         }
     }
     public static void  sendUpdate(String id) {
-        List<String> updateMessage = new ArrayList<>();
-        updateMessage.add(id);
+        String updateMessage = id;
 
         if(id.charAt(0) == 'Q'){
             Queue queue = queues.stream().filter(q -> q.getId().equals(id)).findFirst().orElse(null);
-            updateMessage.add(String.valueOf(queue.getProducts().size()));
+            updateMessage += "," + queue.getProducts().size();
             template.convertAndSend("/topic/updates", updateMessage);
         }
         else{
             Machine machine = machines.stream().filter(m -> m.getId().equals(id)).findFirst().orElse(null);
-            updateMessage.add(machine.getColor());
+            updateMessage += "," + machine.getColor();
             template.convertAndSend("/topic/updates", updateMessage);
         }
-
+        System.out.println("Update sent: " + updateMessage);
     }
 }

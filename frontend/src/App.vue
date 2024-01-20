@@ -1,7 +1,9 @@
 <template>
   <div id="app">
     <div ref="stage" id="container"></div>
-    <ToolBar @addMachine="addMachine" @addQueue="addQueue" @addArrow="addArrow" />
+    <ToolBar @addMachine="addMachine" @addQueue="addQueue" @addArrow="isAddingArrow = !isAddingArrow"
+      @addProduct="NumberofProducts = NumberofProducts + 1" @remProduct="NumberofProducts = NumberofProducts - 1" @play="play"
+      @replay="replay" :isAddingArrow="isAddingArrow" :NumberofProducts="NumberofProducts" />
   </div>
 </template>
 
@@ -23,19 +25,23 @@ export default {
       arrows: [],
       nextMachineId: 1,
       nextQueueId: 0,
+      isAddingArrow: false,
+      selectedSource: null,
+      selectedDestination: null,
+      NumberofProducts: 0,
     }
   },
   mounted() {
     this.stage = new Konva.Stage({
       container: 'container',
-      width: 1510,
-      height: 675
+      width: 1520,
+      height: 695
     });
     this.layer = new Konva.Layer();
     this.stage.add(this.layer);
   },
   methods: {
-    createShapeWithText(xc, yc, shape, textString, id) {
+    createShapeWithText(xc, yc, shape, textString) {
       const text = new Konva.Text({
         x: xc,
         y: yc,
@@ -46,7 +52,6 @@ export default {
 
       const group = new Konva.Group({
         draggable: true,
-        id: id,
       });
 
       group.add(shape);
@@ -54,7 +59,6 @@ export default {
 
       return group;
     },
-
     addMachine() {
       const machine = new Konva.Circle({
         x: 42,
@@ -66,12 +70,22 @@ export default {
 
       const machineGroup = this.createShapeWithText(30, 34, machine, 'M' + this.nextMachineId);
 
+      machineGroup.on('click', () => {
+        if (this.isAddingArrow) {
+          if (!this.selectedSource) {
+            this.selectedSource = machineGroup;
+          } else if (!this.selectedDestination) {
+            this.selectedDestination = machineGroup;
+            this.addArrow();
+          }
+        }
+      });
+
       this.layer.add(machineGroup);
       this.machines.push(machineGroup);
       this.layer.draw();
       this.nextMachineId++;
     },
-
     addQueue() {
       const queue = new Konva.Rect({
         x: 5,
@@ -80,98 +94,108 @@ export default {
         height: 50,
         fill: 'grey',
         stroke: 'black',
+        type: 'queue'
       });
 
       const queueGroup = this.createShapeWithText(40, 10, queue, 'Q' + this.nextQueueId);
 
+      queueGroup.on('click', () => {
+        if (this.isAddingArrow) {
+          if (!this.selectedSource) {
+            this.selectedSource = queueGroup;
+          } else if (!this.selectedDestination) {
+            this.selectedDestination = queueGroup;
+            this.addArrow();
+          }
+        }
+      });
       this.layer.add(queueGroup);
       this.queues.push(queueGroup);
       this.layer.draw();
       this.nextQueueId++;
     },
-    findClickedShape() {
-      const pointer = this.stage.getPointerPosition();
-      console.log(this.stage.getPointerPosition())
-      // Iterate through machines and check if the click occurred within a machine
-      for (const machine of this.machines) {
-        const shape = machine.findOne('Circle');
-        if (this.isClickInsideShape(pointer, shape)) {
-          console.log("here1")
-          return shape;
-        }
-      }
-
-      // Iterate through queues and check if the click occurred within a queue
-      for (const queue of this.queues) {
-        const shape = queue.findOne('Rect');
-        if (this.isClickInsideShape(pointer, shape)) {
-          return shape;
-        }
-      }
-
-      // If no shape is found, return null
-      return null;
-    },
-
-    isClickInsideShape(pointer, shape) {
-      // Check if the click occurred within the boundaries of the shape
-      return (
-        pointer.x >= shape.x() &&
-        pointer.x <= shape.x() + shape.width() &&
-        pointer.y >= shape.y() &&
-        pointer.y <= shape.y() + shape.height()
-      );
-    }
-    ,
     addArrow() {
-      let startShape = null;
-
-      // Listen for the first click to set the starting point
-      const startListener = () => {
-        startShape = this.findClickedShape();
-        if (startShape) {
-          this.stage.off('click', startListener); // Remove the listener after the first click
-          this.stage.on('click', endListener); // Add a new listener for the second click
-        }
-      };
-
-      // Listen for the second click to set the ending point
-      const endListener = () => {
-        const endShape = this.findClickedShape();
-        if (endShape && startShape !== endShape) {
-          // Create the arrow based on the start and end points
-          const arrow = new Konva.Arrow({
-            points: [startShape.x(), startShape.y(), endShape.x(), endShape.y()],
-            pointerLength: 10,
-            pointerWidth: 10,
-            fill: 'black',
-            stroke: 'black',
-            strokeWidth: 4,
-          });
-
-          const arrowGroup = new Konva.Group({
-            draggable: true,
-            id: 'arrow' + Date.now(),
-          });
-
-          arrowGroup.add(arrow);
-
-          this.layer.add(arrowGroup);
-          this.arrows.push(arrowGroup);
-          this.layer.draw();
-
-          // Remove the listener after the second click
-          this.stage.off('click', endListener);
+      console.log(this.arrows);
+      console.log([this.selectedSource.children[1].text(), this.selectedDestination.children[1].text()]);
+      if (this.selectedDestination.children[1].text()[0] === this.selectedSource.children[1].text()[0]) {
+        alert("You can't connect two machines or two queues!");
+        this.selectedSource = null;
+        this.selectedDestination = null;
+        return;
+      } else if (this.arrows.some(arrow => arrow[0] === this.selectedSource.children[1].text() && arrow[1] === this.selectedDestination.children[1].text())
+        || this.arrows.some(arrow => arrow[0] === this.selectedDestination.children[1].text() && arrow[1] === this.selectedSource.children[1].text())) {
+        alert("Queue and Machine Already Connected!");
+        this.selectedSource = null;
+        this.selectedDestination = null;
+        return;
+      } else if (this.selectedDestination.children[1].text() === 'Q0') {
+        alert("Q0 can't be a destination!");
+        this.selectedSource = null;
+        this.selectedDestination = null;
+        return;
+      }
+      if (this.selectedSource && this.selectedDestination) {
+        let x1, y1, x2, y2;
+        if (this.selectedSource.children[1].text()[0] === 'M') {
+          x1 = this.selectedSource.x() + 40;
+          y1 = this.selectedSource.y() + 40;
+          x2 = this.selectedDestination.x() + 50;
+          y2 = this.selectedDestination.y() + 25;
         } else {
-          // Handle the case where the second click is on the same shape as the first click
-          this.stage.off('click', endListener);
+          x1 = this.selectedSource.x() + 50;
+          y1 = this.selectedSource.y() + 25;
+          x2 = this.selectedDestination.x() + 40;
+          y2 = this.selectedDestination.y() + 40;
         }
-      };
 
-      // Start listening for the first click
-      this.stage.on('click', startListener);
+        var angle = Math.atan2(y2 - y1, x2 - x1);
+        x1 = x1 + 50 * Math.cos(angle);
+        y1 = y1 + 50 * Math.sin(angle);
+        x2 = x2 - 50 * Math.cos(angle);
+        y2 = y2 - 50 * Math.sin(angle);
+
+        const arrow = new Konva.Arrow({
+          points: [
+            x1, y1,
+            x2, y2
+          ],
+          pointerLength: 10,
+          pointerWidth: 10,
+          fill: 'black',
+          stroke: 'black',
+          strokeWidth: 3
+        });
+
+        this.layer.add(arrow);
+        this.layer.draw();
+        this.arrows.push([this.selectedSource.children[1].text(), this.selectedDestination.children[1].text()]);
+
+        this.selectedSource = null;
+        this.selectedDestination = null;
+      }
     },
-
+    play() {
+      for (let queue of this.queues) {
+        if (this.arrows.some(arrow => arrow[1] === queue.children[1].text() || arrow[0] === queue.children[1].text())) {
+          continue;
+        } else {
+          alert(queue.children[1].text() + " is not connected!");
+          return;
+        }
+      }
+      for (let machine of this.machines) {
+        if (this.arrows.some(arrow => arrow[0] === machine.children[1].text() || arrow[1] === machine.children[1].text())) {
+          continue;
+        } else {
+          alert(machine.children[1].text() + " is not connected!");
+          return;
+        }
+      }
+      alert("Playing...");
+    },
+    replay() {
+      alert("Replaying...");
+    }
   }
 }
 </script>

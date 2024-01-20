@@ -1,5 +1,7 @@
 package com.producerconsumer.model;
 
+import com.producerconsumer.service.SimulationService;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,6 +30,7 @@ public class Queue implements Runnable {
 
     public synchronized void addProduct(Product product) {
         products.add(product);
+        SimulationService.sendUpdate(id);
     }
 
     public String getId() {
@@ -57,6 +60,7 @@ public class Queue implements Runnable {
                 Machine freeMachine = getFreeMachine();
                 if(freeMachine != null && !products.isEmpty()){
                     Product product = getProduct();
+                    SimulationService.sendUpdate(id);
                     freeMachine.addProduct(product);
                     System.out.println("Queue " + id + " sent product " + product.getColor() + " to machine " + freeMachine.getId());
                 }

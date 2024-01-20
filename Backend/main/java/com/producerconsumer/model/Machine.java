@@ -1,4 +1,6 @@
 package com.producerconsumer.model;
+import com.producerconsumer.service.SimulationService;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -16,7 +18,7 @@ public class Machine implements Runnable{
         Random random = new Random();
         this.serviceTime = random.nextInt(5) + 4;
         this.id = id;
-        this.color = "green";  // default color
+        this.color = "grey";  // default color
         this.input = new ArrayList<>();
     }
 
@@ -36,6 +38,7 @@ public class Machine implements Runnable{
         this.currentProduct = currentProduct;
         notifyInputQueues("busy");
         color = currentProduct.getColor();
+        SimulationService.sendUpdate(id);
         //start processing the product
         Thread thread = new Thread(this);
         thread.start();
@@ -50,7 +53,8 @@ public class Machine implements Runnable{
             output.addProduct(currentProduct);
             notifyInputQueues("free");
             currentProduct = null;
-            color = "green";
+            color = "grey";
+            SimulationService.sendUpdate(id);
             System.out.println("Machine " + id + " is free and the output product is " + output.getProducts().get(output.getProducts().size()-1).getColor() +" sent to output queue " + output.getId());
         }catch (Exception e){
             e.printStackTrace();
@@ -71,6 +75,10 @@ public class Machine implements Runnable{
         }
     }
 
+    public String getId() {
+        return id;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -83,7 +91,4 @@ public class Machine implements Runnable{
         return Objects.hash(id);
     }
 
-    public String getId() {
-        return id;
-    }
 }

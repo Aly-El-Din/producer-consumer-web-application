@@ -1,11 +1,9 @@
 package com.producerconsumer.model;
 public class Product {
     private String color;
-    private String id;
 
-    public Product(String id) {
-        this.id = id;
-        String[] colors = {"red","blue","orange","purple","black","pink"};
+    public Product() {
+        String[] colors = {"red","blue","orange","purple","black","pink","#125D63","#7FFF00"};
         this.color = colors[(int)(Math.random()*colors.length)];
     }
     public String getColor() {

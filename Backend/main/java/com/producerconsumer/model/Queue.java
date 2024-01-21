@@ -55,14 +55,13 @@ public class Queue implements Runnable {
     public void run() {
         while (true) {
             try {
-                //wait for 1 second before checking for free machines (input rate)
-                Thread.sleep(1000L);
+                //wait for random input rate before checking for free machines
+                Thread.sleep((int) (Math.random() * 2000) + 2000);
                 Machine freeMachine = getFreeMachine();
                 if(freeMachine != null && !products.isEmpty()){
                     Product product = getProduct();
                     SimulationService.sendUpdate(id);
                     freeMachine.addProduct(product);
-                    System.out.println("Queue " + id + " sent product " + product.getColor() + " to machine " + freeMachine.getId());
                 }
 
             } catch (Exception e) {

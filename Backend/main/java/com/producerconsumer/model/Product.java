@@ -1,5 +1,8 @@
 package com.producerconsumer.model;
-public class Product {
+
+import com.producerconsumer.service.CareTaker;
+
+public class Product extends CareTaker {
     private String color;
 
     public Product() {
@@ -8,5 +11,18 @@ public class Product {
     }
     public String getColor() {
         return color;
+    }
+    public void setSavedColor(String color){
+        this.color=color;
+    }
+    public Memento takeSnapShot(){
+        return new Memento(color);
+    }
+    public static class Memento {
+        private final String color;
+
+        private Memento(String color){this.color=color;}
+
+        public String getProductColor(){return color;}
     }
 }

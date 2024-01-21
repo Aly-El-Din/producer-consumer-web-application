@@ -42,10 +42,11 @@ export default {
         console.log("here in update ")
         console.log(update)
         console.log(update.body)
-        if(update.body.split(',')[0][0] === 'Q')
+        if (update.body.split(',')[0][0] === 'Q')
           this.queues[parseInt(update.body.split(',')[0][1])].children[2].text(update.body.split(',')[1]);
-        else
+        else {
           this.machines[parseInt(update.body.split(',')[0][1]) - 1].children[0].fill(update.body.split(',')[1]);
+        }
       });
     });
   },
@@ -230,6 +231,9 @@ export default {
       }
       console.log("arrows group")
       console.log(this.arrowsGroup)
+      for(let q of this.queues){
+        q.children[2].text('0')
+      }
       fetch(`http://localhost:8080/start?machines=${this.machines.length}&queues=${this.queues.length}
              &arrows=${this.arrowsGroup}&numberofProducts=${this.NumberofProducts}`, {
         method: 'POST',
@@ -244,7 +248,13 @@ export default {
         });
     },
     replay() {
-      alert("Replaying...");
+      console.log("replay")
+      for(let q of this.queues){
+        q.children[2].text('0')
+      }
+      fetch(`http://localhost:8080/replay`, {
+        method: 'POST',
+      })
     }
   }
 }

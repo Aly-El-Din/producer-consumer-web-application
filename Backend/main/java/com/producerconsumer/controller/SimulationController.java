@@ -24,5 +24,8 @@ public class SimulationController {
         simulationService.buildGraph(arrows);
         simulationService.startSimulation(numberofProducts);
     }
-
+    @PostMapping("/replay")
+    public void replaySimulation(){
+        simulationService.replay();
+    }
 }

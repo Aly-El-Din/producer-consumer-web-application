@@ -17,16 +17,22 @@ public class SimulationService {
     private static List<Queue> queues;
     private static SimpMessagingTemplate template;
 
+    // private static  List<Product>products;
+    private static CareTaker careTaker;
     @Autowired
     public SimulationService(SimpMessagingTemplate template) {
         SimulationService.template = template;
         machines = new ArrayList<>();
         queues = new ArrayList<>();
+        careTaker=new CareTaker();
+        //products=new ArrayList<>();
     }
 
     public SimulationService() {
         machines = new ArrayList<>();
         queues = new ArrayList<>();
+        careTaker=new CareTaker();
+        //products=new ArrayList<>();
     }
     public void addMachines(int machinesCount) {
         machines.clear();
@@ -66,22 +72,48 @@ public class SimulationService {
         }
     }
     public void startSimulation(int numberOfProducts) {
+        if(!careTaker.getStateHistory().isEmpty()){
+            careTaker.clearHisory();
+        }
         Queue q0 = queues.stream().filter(q -> q.getId().equals("Q0")).findFirst().orElse(null);
 
         for (int i = 0; i < numberOfProducts; i++) {
-            q0.addProduct(new Product());
+            Product newProduct=new Product();
+            q0.addProduct(newProduct);
+            careTaker.captureSnapShots(newProduct.takeSnapShot());
         }
+
         for (Queue queue : queues) {
             Thread thread = new Thread(queue);
             thread.start();
         }
     }
+
+    public void replay(){
+        Queue q0 = queues.stream().filter(q -> q.getId().equals("Q0")).findFirst().orElse(null);
+        Queue lastq = queues.stream().filter(q -> q.getId().equals("Q"+(queues.size()-1))).findFirst().orElse(null);
+        lastq.getProducts().clear();
+        sendUpdate("Q"+(queues.size()-1));
+        List<Product.Memento>history=careTaker.getStateHistory();
+        for (int i = 0; i <history.size(); i++) {
+            Product newProduct=new Product();
+            newProduct.setSavedColor(history.get(i).getProductColor());
+            q0.addProduct(newProduct);
+        }
+        //careTaker.clearHisory();
+        for (Queue queue : queues) {
+            Thread thread = new Thread(queue);
+            thread.start();
+        }
+    }
+
     public static void  sendUpdate(String id) {
         String updateMessage = id;
 
         if(id.charAt(0) == 'Q'){
+            System.out.println(id);
             Queue queue = queues.stream().filter(q -> q.getId().equals(id)).findFirst().orElse(null);
-            updateMessage += "," + queue.getProducts().size();
+            updateMessage += "," +  queue.getProducts().size();
             template.convertAndSend("/topic/updates", updateMessage);
         }
         else{
